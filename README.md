@@ -1,1 +1,1 @@
-Dependencies: libcurl
+Dependencies: libcurl, libtar
