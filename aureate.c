@@ -36,6 +36,7 @@ int download(char *argv[]) {
 	
 	//curl file
 	printf("Downloading tarball...");
+	fflush(stdout);
 	CURL *curl;
 	CURLcode res;
 	FILE *fp;
@@ -69,7 +70,7 @@ int download(char *argv[]) {
 	struct archive *ext = archive_write_disk_new();
 	archive_write_disk_set_options(ext, ARCHIVE_EXTRACT_SECURE_NODOTDOT | ARCHIVE_EXTRACT_SECURE_SYMLINKS | ARCHIVE_EXTRACT_PERM);
 	archive_write_disk_set_standard_lookup(ext);
-	archive_write_disk_set_options(ext, cache);
+	archive_write_disk_set_extract_at_path(ext, cache);
 
 	struct archive_entry *entry;
 	while (archive_read_next_header(a, &entry) == ARCHIVE_OK) {
@@ -86,7 +87,7 @@ int download(char *argv[]) {
 	archive_write_free(ext);
 
 	//system portion of the show
-
+	//check todo list
 
 	return 0;
 }
