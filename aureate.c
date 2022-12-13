@@ -73,8 +73,6 @@ int download(char *argv[]) {
 
 	struct archive_entry *entry;
 	while (archive_read_next_header(a, &entry) == ARCHIVE_OK) {
-		const char *path = archive_entry_pathname(entry);
-		int size = archive_entry_size(entry);
 		r = archive_read_extract(a, entry, 0);
 		if (r != ARCHIVE_OK) {
 			fprintf(stderr, "Placeholder tar extract error.\n");
