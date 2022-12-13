@@ -34,7 +34,8 @@ int download(char *argv[]) {
 	strcat(final_url, url);
 	strcat(final_url, ".tar.gz");
 	
-	//curl file	
+	//curl file
+	printf("Downloading tarball...");
 	CURL *curl;
 	CURLcode res;
 	FILE *fp;
@@ -50,7 +51,7 @@ int download(char *argv[]) {
 		curl_easy_cleanup(curl);
 		fclose(fp);
 	}
-
+	
 	char* tarfile = strcat(cache, pkg);
 	strcat(tarfile, ".tar.gz");
 	struct archive *a = archive_read_new();
@@ -58,8 +59,11 @@ int download(char *argv[]) {
 	archive_read_support_format_tar(a);
 	int r = archive_read_open_filename(a, tarfile, 10240);
 	if (r != ARCHIVE_OK) {
-		fprintf(stderr, "Not a tar archive.\n");
+		fprintf(stderr, "error.\nEither the package name is invalid or you are not connected to the internet.\n");
+		remove(tarfile);
 		return 1;
+	} else {
+		printf("done!\n");
 	}
 
 	struct archive *ext = archive_write_disk_new();
@@ -82,7 +86,9 @@ int download(char *argv[]) {
 	archive_read_free(a);
 	archive_write_close(ext);
 	archive_write_free(ext);
-	printf("Done\n");
+
+	//system portion of the show
+
 
 	return 0;
 }
