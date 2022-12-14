@@ -1,10 +1,12 @@
 PREFIX = /usr/local
+LIBS = -lcurl -larchive -lgit2
+FLAGS = ${LIBS} -o aureate
 
 all:
-	cc aureate.c -lcurl -larchive -o aureate
+	cc aureate.c ${FLAGS}
 
 verbose:
-	clang aureate.c -Wall -Werror -fsanitize=undefined,address -lcurl -larchive -o aureate
+	clang aureate.c -Wall -Werror -fsanitize=undefined,address ${FLAGS}
 
 install:
 	install -Dm755 ./aureate ${PREFIX}/bin/aureate
