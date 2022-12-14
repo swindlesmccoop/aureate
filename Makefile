@@ -8,3 +8,9 @@ verbose:
 
 install:
 	install -Dm755 ./aureate ${PREFIX}/bin/aureate
+
+uninstall:
+	rm -f ${PREFIX}/bin/aureate
+
+clean:
+	rm -rf ${XDG_CACHE_HOME}/aureate
