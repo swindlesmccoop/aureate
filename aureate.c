@@ -2,12 +2,14 @@
 #include <archive_entry.h>
 #include <curl/curl.h>
 #include <fcntl.h>
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <unistd.h>
+#include "config.h"
 
 int download(char *argv[]) {
 	//get cache dir
@@ -60,11 +62,11 @@ int download(char *argv[]) {
 	archive_read_support_format_tar(a);
 	int r = archive_read_open_filename(a, tarfile, 10240);
 	if (r != ARCHIVE_OK) {
-		fprintf(stderr, "error.\nEither the package name is invalid or you are not connected to the internet.\n");
+		fprintf(stderr, RED "error.\nEither the package name is invalid or you are not connected to the internet.\n" RESET);
 		remove(tarfile);
 		return 1;
 	} else {
-		printf("done!\n");
+		printf(GREEN "done!\n" RESET);
 	}
 
 	struct archive *ext = archive_write_disk_new();
@@ -72,13 +74,15 @@ int download(char *argv[]) {
 	archive_write_disk_set_standard_lookup(ext);
 
 	struct archive_entry *entry;
+	printf("Extracting tarball...\n");
 	while (archive_read_next_header(a, &entry) == ARCHIVE_OK) {
 		r = archive_read_extract(a, entry, 0);
 		if (r != ARCHIVE_OK) {
-			fprintf(stderr, "Placeholder tar extract error.\n");
+			fprintf(stderr, RED "error.\n" RESET);
 			return 1;
 		}
 	}
+	printf(GREEN "done!\n" RESET);
 
 	archive_read_close(a);
 	archive_read_free(a);
@@ -92,19 +96,41 @@ int download(char *argv[]) {
 }
 
 void help() {
-	printf("Usage: aureate -S <package>\n");
+	printf(BLUE "AUReate" RESET ": AUR helper in the C programming language
+Usage: aureate [arguments] <package>
+	
+Arguments:
+	" GREEN "-S: " RESET "Sync package from remote respository
+	" GREEN "-R: " RESET "Remove local package\n");
 }
 
 int main(int argc, char* argv[]) {
-	//needs to have two arguments, else print help
-	if (argc < 3) {
-		help();
+	if (geteuid() == 0) {
+		fprintf(stderr, RED "Error: do not run as root.\n" RESET);
 		return 1;
 	}
-	
-	//download if args are valid, print help otherwise	
-	if (strcmp(argv[1], "-S") == 0 && strcmp(argv[2], "") != 0) {
-		download(argv);
+	bool isCaseSensitive = true;
+	enum { CHARACTER_MODE, WORD_MODE, LINE_MODE } mode = CHARACTER_MODE;
+
+	if (argc > 1) {
+		char *arg = argv[1];
+		switch (arg[1]) {
+			case 'S':
+				if (argc == 3) {
+					download(argv);
+					break;
+				} else {
+					help();
+					break;
+				}
+			case 'h':
+				help();
+				break;
+			default:
+				printf(RED "Invalid argument: %s\n" RESET, arg);
+			help();
+				break;
+		}
 	} else {
 		help();
 	}
