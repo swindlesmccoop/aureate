@@ -12,14 +12,14 @@
 int download(char *argv[]) {
 	//get cache dir
 	char syscache[100];
-    strcpy(syscache, getenv("XDG_CACHE_HOME"));
+	strcpy(syscache, getenv("XDG_CACHE_HOME"));
 	struct stat st;
 	if (stat(syscache, &st) == -1) {
 		mkdir(syscache, 0700);
 	}
-    strcat(syscache, "/aureate/");
-    char cache[100];
-    strcpy(cache, syscache);
+	strcat(syscache, "/aureate/");
+	char cache[100];
+	strcpy(cache, syscache);
 	if (stat(cache, &st) == -1) {
 		mkdir(cache, 0700);
 	}
