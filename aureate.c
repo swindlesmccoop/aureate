@@ -34,7 +34,9 @@ int download(char *argv[]) {
 	strcat(final_url, url);
 	strcat(final_url, ".tar.gz");
 	
-	//curl file	
+	//curl file
+	printf("Downloading tarball...");
+	fflush(stdout);
 	CURL *curl;
 	CURLcode res;
 	FILE *fp;
@@ -50,7 +52,7 @@ int download(char *argv[]) {
 		curl_easy_cleanup(curl);
 		fclose(fp);
 	}
-
+	
 	char* tarfile = strcat(cache, pkg);
 	strcat(tarfile, ".tar.gz");
 	struct archive *a = archive_read_new();
@@ -58,19 +60,20 @@ int download(char *argv[]) {
 	archive_read_support_format_tar(a);
 	int r = archive_read_open_filename(a, tarfile, 10240);
 	if (r != ARCHIVE_OK) {
-		fprintf(stderr, "Not a tar archive.\n");
+		fprintf(stderr, "error.\nEither the package name is invalid or you are not connected to the internet.\n");
+		remove(tarfile);
 		return 1;
+	} else {
+		printf("done!\n");
 	}
 
 	struct archive *ext = archive_write_disk_new();
 	archive_write_disk_set_options(ext, ARCHIVE_EXTRACT_SECURE_NODOTDOT | ARCHIVE_EXTRACT_SECURE_SYMLINKS | ARCHIVE_EXTRACT_PERM);
 	archive_write_disk_set_standard_lookup(ext);
-	archive_write_disk_set_options(ext, cache);
+	archive_write_disk_set_extract_at_path(ext, cache);
 
 	struct archive_entry *entry;
 	while (archive_read_next_header(a, &entry) == ARCHIVE_OK) {
-		const char *path = archive_entry_pathname(entry);
-		int size = archive_entry_size(entry);
 		r = archive_read_extract(a, entry, 0);
 		if (r != ARCHIVE_OK) {
 			fprintf(stderr, "Placeholder tar extract error.\n");
@@ -82,7 +85,9 @@ int download(char *argv[]) {
 	archive_read_free(a);
 	archive_write_close(ext);
 	archive_write_free(ext);
-	printf("Done\n");
+
+	//system portion of the show
+	//check todo list
 
 	return 0;
 }
