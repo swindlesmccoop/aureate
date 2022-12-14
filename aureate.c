@@ -94,8 +94,9 @@ int download(char *argv[]) {
 	archive_write_close(ext);
 	archive_write_free(ext);
 
-	//system portion of the show
-	//check todo list
+	char *pkgdir = strcat(syscache, argv[2]);
+	chdir(pkgdir);
+	system("makepkg -si");
 
 	return 0;
 }
