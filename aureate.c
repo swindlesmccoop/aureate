@@ -54,7 +54,11 @@ int download(char *argv[]) {
 		curl_easy_cleanup(curl);
 		fclose(fp);
 	}
-	
+
+	//TODO: find a better way to do this
+	//archive_entry_set_pathname(cache, pkg);
+	chdir(cache);
+
 	char* tarfile = strcat(cache, pkg);
 	strcat(tarfile, ".tar.gz");
 	struct archive *a = archive_read_new();
@@ -67,6 +71,7 @@ int download(char *argv[]) {
 		return 1;
 	} else {
 		printf(GREEN "done!\n" RESET);
+		remove(tarfile);
 	}
 
 	struct archive *ext = archive_write_disk_new();
@@ -74,7 +79,7 @@ int download(char *argv[]) {
 	archive_write_disk_set_standard_lookup(ext);
 
 	struct archive_entry *entry;
-	printf("Extracting tarball...\n");
+	printf("Extracting tarball...");
 	while (archive_read_next_header(a, &entry) == ARCHIVE_OK) {
 		r = archive_read_extract(a, entry, 0);
 		if (r != ARCHIVE_OK) {
