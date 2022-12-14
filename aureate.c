@@ -96,12 +96,11 @@ int download(char *argv[]) {
 }
 
 void help() {
-	printf(BLUE "AUReate" RESET ": AUR helper in the C programming language
-Usage: aureate [arguments] <package>
-	
-Arguments:
-	" GREEN "-S: " RESET "Sync package from remote respository
-	" GREEN "-R: " RESET "Remove local package\n");
+	printf(BLUE "AUReate" RESET ": AUR helper in the C programming language\n"
+	"Usage: aureate [arguments] <package>\n\n"
+	"Arguments:\n"
+	GREEN "  -S: " RESET "Sync package from remote respository\n"
+	GREEN "  -R: " RESET "Remove local package\n");
 }
 
 int main(int argc, char* argv[]) {
