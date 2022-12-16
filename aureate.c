@@ -1,6 +1,3 @@
-#include <archive.h>
-#include <archive_entry.h>
-#include <curl/curl.h>
 #include <fcntl.h>
 #include <git2.h>
 #include <stdbool.h>
