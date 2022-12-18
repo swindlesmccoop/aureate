@@ -1,5 +1,5 @@
 PREFIX = /usr/local
-LIBS = -lgit2
+LIBS = -lgit2 -lcurl
 FLAGS = ${LIBS} -o aureate
 
 all:
