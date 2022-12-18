@@ -9,56 +9,57 @@
 #include <unistd.h>
 #include "config.h"
 
+#define BASE_URL "https://aur.archlinux.org/"
+#define SUFFIX ".git"
+
 int download(char *argv[]) {
-	//get cache dir
-	char syscache[100];
-	strcpy(syscache, getenv("XDG_CACHE_HOME"));
+	const char* syscache = getenv("XDG_CACHE_HOME");
+	const char* pkg = argv[2];
+
 	struct stat st;
+	
 	if (stat(syscache, &st) == -1) {
 		mkdir(syscache, 0700);
 	}
-	strcat(syscache, "/aureate/");
-	char cache[100];
-	strcpy(cache, syscache);
+
+	char cache[strlen(syscache)+strlen("/aureate")+1];
+	memset(cache, 0, strlen(syscache)+strlen("/aureate")+1);
+	strncat(cache, syscache, strlen(syscache));
+	strncat(cache, "/aureate", strlen("/aureate"));
 	if (stat(cache, &st) == -1) {
 		mkdir(cache, 0700);
 	}
 
 	//get URL
-	const char* pkg = argv[2];
-	const char* pkgname = argv[2];
-	strcpy (pkgname, pkg);
-	//const char* baseurl = "https://aur.archlinux.org/cgit/aur.git/snapshot/";
-	const char* baseurl = "https://aur.archlinux.org/";
-	char url[100] = "";
-	strcat(url, baseurl);
-	strcat(url, pkg);
-	char final_url[100] = "";
-	strcat(final_url, url);
-	strcat(final_url, ".git");
+	char clone_url[strlen(BASE_URL)+strlen(pkg)+strlen(SUFFIX)+1];
+	memset(clone_url, 0, strlen(BASE_URL)+strlen(pkg)+strlen(SUFFIX)+1);
+	strncat(clone_url, BASE_URL, strlen(BASE_URL));
+	strncat(clone_url, pkg, strlen(pkg));
+	strncat(clone_url, SUFFIX, strlen(SUFFIX));
 
 	chdir(cache);
-	if (stat(pkgname, &st) == -1) {
-		git_repository *repo;
-		git_repository_open(&repo, pkgname);
-		git_remote *remote;
-		git_remote_lookup(&remote, repo, "origin");
-		git_strarray refspecs;
-		refspecs.count = 1;
-		refspecs.strings = (char**) malloc(refspecs.count * sizeof(char*));
-		refspecs.strings[0] = "refs/heads/*:refs/heads/*";
-
-		git_remote_fetch(remote, &refspecs, NULL, NULL);
-
-		git_oid remote_head, local_head;
-		git_remote_head(remote, &remote_head);
-		git_reference_name_to_id(&local_head, repo, "HEAD");
-
-		if (git_oid_cmp(&remote_head, &local_head) == 0) {
-			printf("No changes\n");
+	git_libgit2_init();
+	printf(BLUE ":: " RESET "Fetching repo...");
+	fflush(stdout);
+	if (stat(pkg, &st) == -1) {
+		git_repository *repo = NULL;
+		git_clone(&repo, clone_url, pkg, NULL);
+		chdir(pkg);
+		if (access("PKGBUILD", F_OK) != -1) {
+			printf("done.\n");
+			fflush(stdout);
+		} else {
+			printf("error. Package name invalid or you are not connected to the internet.\n");
+			fflush(stdout);
 			return 1;
 		}
+	} else {
+		chdir(pkg);
+		//git fetch code
 	}
+
+	system("makepkg -si");
+
 	return 0;
 }
 
@@ -75,8 +76,6 @@ int main(int argc, char* argv[]) {
 		fprintf(stderr, RED "Error: do not run as root.\n" RESET);
 		return 1;
 	}
-	bool isCaseSensitive = true;
-	enum { CHARACTER_MODE, WORD_MODE, LINE_MODE } mode = CHARACTER_MODE;
 
 	if (argc > 1) {
 		char *arg = argv[1];
