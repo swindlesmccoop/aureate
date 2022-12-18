@@ -1,3 +1,5 @@
+#include <curl/curl.h>
+#include <dirent.h>
 #include <fcntl.h>
 #include <git2.h>
 #include <stdbool.h>
@@ -76,6 +78,18 @@ int download(char *argv[]) {
 	return 0;
 }
 
+int uninstall(char *argv[]) {
+	const char* pkg = argv[2];
+	printf("Remove package %s\n", pkg);
+	printf("Not implemented yet.\n");
+}
+
+int search(char *argv[]) {
+	const char* pkg = argv[2];
+	printf("Search package %s\n", pkg);
+	printf("Not implemented yet.\n");
+}
+
 void help() {
 	printf(BLUE "AUReate" RESET ": AUR helper in the C programming language\n"
 	"Usage: aureate [arguments] <package>\n\n"
@@ -84,34 +98,29 @@ void help() {
 	GREEN "  -R: " RESET "Remove local package\n");
 }
 
+void flags(int argc, char* argv[]) {
+	for (int i = 1; i < argc; i++) {
+		/* -S  */ if (strcmp(argv[i], "-S") == 0) { download(argv); }
+		/* -Ss */ else if (strcmp(argv[i], "-Ss") == 0) { search(argv); }
+		/* -R  */ else if (strcmp(argv[i], "-R") == 0) { uninstall(argv); }
+	}
+}
+
+
 int main(int argc, char* argv[]) {
+	//kill if root is executing
 	if (geteuid() == 0) {
 		fprintf(stderr, RED "Error: do not run as root.\n" RESET);
 		return 1;
 	}
-
-	if (argc > 1) {
-		char *arg = argv[1];
-		switch (arg[1]) {
-			case 'S':
-				if (argc == 3) {
-					download(argv);
-					break;
-				} else {
-					help();
-					break;
-				}
-			case 'h':
-				help();
-				break;
-			default:
-				printf(RED "Invalid argument: %s\n" RESET, arg);
-			help();
-				break;
-		}
-	} else {
+	
+	//require args
+	if (argc < 1) {
 		help();
+		return 1;
 	}
 	
+	//run program
+	flags(argc, argv);
 	return 0;
 }
