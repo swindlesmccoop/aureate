@@ -1,5 +1,5 @@
 //uncomment the line below to enable colored output
-//#define COLORS
+#define COLORS
 #ifdef COLORS
 	#define RED "\033[0;31m"
 	#define GREEN "\033[0;32m"
