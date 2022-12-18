@@ -1,3 +1,5 @@
+#include <curl/curl.h>
+#include <dirent.h>
 #include <fcntl.h>
 #include <git2.h>
 #include <stdbool.h>
@@ -10,6 +12,7 @@
 #include "config.h"
 
 #define BASE_URL "https://aur.archlinux.org/"
+#define PARSE_URL BASE_URL "rpc/?v=5&type=info&arg="
 #define SUFFIX ".git"
 
 int download(char *argv[]) {
@@ -76,6 +79,14 @@ int download(char *argv[]) {
 	return 0;
 }
 
+int uninstall(char *argv[]) {
+	const char* pkg = argv[2];
+	char cmd[strlen(SUDO)+strlen("pacman -R")+strlen(pkg)+1];
+	memset(cmd, 0, strlen(SUDO)+strlen("pacman -R")+strlen(pkg)+1);
+	sprintf(cmd, "%s pacman -R %s", SUDO, pkg);
+	system(cmd);
+}
+
 void help() {
 	printf(BLUE "AUReate" RESET ": AUR helper in the C programming language\n"
 	"Usage: aureate [arguments] <package>\n\n"
@@ -84,34 +95,39 @@ void help() {
 	GREEN "  -R: " RESET "Remove local package\n");
 }
 
+void search() {
+	printf("Not yet implemented\n");
+}
+
+void flags(int argc, char* argv[]) {
+	for (int i = 1; i < argc; i++) {
+		if (strcmp(argv[i], "-S") == 0) {
+			download(argv);
+		}
+		else if (strcmp(argv[i], "-Ss") == 0) {
+			search(argv[2]);
+		}
+		else if (strcmp(argv[i], "-R") == 0) {
+			uninstall(argv);
+		}
+	}
+}
+
+
 int main(int argc, char* argv[]) {
+	//kill if root is executing
 	if (geteuid() == 0) {
 		fprintf(stderr, RED "Error: do not run as root.\n" RESET);
 		return 1;
 	}
-
-	if (argc > 1) {
-		char *arg = argv[1];
-		switch (arg[1]) {
-			case 'S':
-				if (argc == 3) {
-					download(argv);
-					break;
-				} else {
-					help();
-					break;
-				}
-			case 'h':
-				help();
-				break;
-			default:
-				printf(RED "Invalid argument: %s\n" RESET, arg);
-			help();
-				break;
-		}
-	} else {
+	
+	//require args
+	if (argc < 1) {
 		help();
+		return 1;
 	}
 	
+	//run program
+	flags(argc, argv);
 	return 0;
 }
