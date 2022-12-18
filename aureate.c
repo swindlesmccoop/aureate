@@ -101,15 +101,9 @@ void search() {
 
 void flags(int argc, char* argv[]) {
 	for (int i = 1; i < argc; i++) {
-		if (strcmp(argv[i], "-S") == 0) {
-			download(argv);
-		}
-		else if (strcmp(argv[i], "-Ss") == 0) {
-			search(argv[2]);
-		}
-		else if (strcmp(argv[i], "-R") == 0) {
-			uninstall(argv);
-		}
+		/* -S  */ if (strcmp(argv[i], "-S") == 0) { download(argv); }
+		/* -Ss */ else if (strcmp(argv[i], "-Ss") == 0) { search(argv); }
+		/* -R  */ else if (strcmp(argv[i], "-R") == 0) { uninstall(argv); }
 	}
 }
 
