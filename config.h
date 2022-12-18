@@ -1,5 +1,6 @@
-//uncomment the line below to enable colored output
-#define COLORS
+#define COLORS //comment this line to disable color output
+#define SUDO "sudo" //set privilege escalation program here
+
 #ifdef COLORS
 	#define RED "\033[0;31m"
 	#define GREEN "\033[0;32m"
@@ -17,6 +18,3 @@
 	#define BOLDBLUE "\033[0m"
 	#define RESET "\033[0m"
 #endif
-
-//set the privilege escalation program to use here
-#define SUDO "sudo"
