@@ -1,18 +1,19 @@
 PREFIX = /usr/local
 LIBS = -lgit2 -lcurl
-FLAGS = ${LIBS} -o aureate
+FLAGS = ${LIBS}
+PROG = aureate
 
 all:
-	cc aureate.c ${FLAGS}
+	cc ${PROG}.c ${FLAGS} -o ${PROG}
 
-verbose:
-	clang aureate.c -Wall -Werror -fsanitize=undefined,address ${FLAGS}
+debug:
+	clang ${PROG} -Wall -Werror -fsanitize=undefined,address ${FLAGS}
 
 install:
-	install -Dm755 ./aureate ${PREFIX}/bin/aureate
+	install -Dm755 ./${PROG} ${PREFIX}/bin/${PROG}
 
 uninstall:
-	rm -f ${PREFIX}/bin/aureate
+	rm -f ${PREFIX}/bin/${PROG}
 
 clean:
-	rm -rf ${XDG_CACHE_HOME}/aureate
+	rm -rf ${XDG_CACHE_HOME}/${PROG}
