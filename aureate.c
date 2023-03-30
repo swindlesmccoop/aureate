@@ -15,6 +15,12 @@
 #define PARSE_URL BASE_URL "rpc/?v=5&type=info&arg="
 #define SUFFIX ".git"
 
+//for API parsing
+size_t write_callback(char *ptr, size_t size, size_t nmemb, void *userdata) {
+	strncat((char*)userdata, ptr, size * nmemb);
+	return size * nmemb;
+}
+
 int download(char *argv[]) {
 	//define vars
 	const char* syscache = getenv("XDG_CACHE_HOME");
@@ -87,16 +93,18 @@ int uninstall(char *argv[]) {
 	system(cmd);
 }
 
+void search() {
+	printf(RED "Not implemented yet.\n" RESET "If you have an idea on how to do so, please email me at swindlesmccoop@waifu.club\n" RESET);
+}
+
 void help() {
 	printf(BLUE "AUReate" RESET ": AUR helper in the C programming language\n"
 	"Usage: aureate [arguments] <package>\n\n"
 	"Arguments:\n"
 	GREEN "  -S: " RESET "Sync package from remote respository\n"
-	GREEN "  -R: " RESET "Remove local package\n");
-}
-
-void search() {
-	printf("Not yet implemented\n");
+	GREEN "  -Ss: " RESET "Search for package in remote respository\n"
+	GREEN "  -R: " RESET "Remove local package\n"
+	GREEN "  -h, --help: " RESET "Print this help message\n");
 }
 
 void flags(int argc, char* argv[]) {
@@ -116,7 +124,7 @@ int main(int argc, char* argv[]) {
 	}
 	
 	//require args
-	if (argc < 1) {
+	if (argc < 2) {
 		help();
 		return 1;
 	}
@@ -125,3 +133,4 @@ int main(int argc, char* argv[]) {
 	flags(argc, argv);
 	return 0;
 }
+
