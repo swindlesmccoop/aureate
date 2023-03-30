@@ -7,7 +7,7 @@ all:
 	cc ${PROG}.c ${FLAGS} -o ${PROG}
 
 debug:
-	clang ${PROG} -Wall -Werror -fsanitize=undefined,address ${FLAGS}
+	clang ${PROG}.c -Wall -Werror -fsanitize=undefined,address ${FLAGS}
 
 install:
 	install -Dm755 ./${PROG} ${PREFIX}/bin/${PROG}
