@@ -1,5 +1,5 @@
 PREFIX = /usr/local
-LIBS = -lgit2 -lcurl
+LIBS = -lgit2 -lcurl -ljson-c
 FLAGS = ${LIBS}
 PROG = aureate
 
