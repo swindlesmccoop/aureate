@@ -14,82 +14,75 @@
 
 #define BASE_URL "https://aur.archlinux.org/"
 #define PARSE_URL BASE_URL "rpc/?v=5&type=info&arg="
+#define SEARCH_URL BASE_URL "rpc/?v=5&type=search&arg=%s"
 #define SUFFIX ".git"
 
 //for API parsing
 struct MemoryStruct {
-        char *memory;
-        size_t size;
+		char *memory;
+		size_t size;
 };
 
 static size_t WriteMemoryCallback(void *contents, size_t size, size_t nmemb, void *userp) {
-        size_t realsize = size * nmemb;
-        struct MemoryStruct *mem = (struct MemoryStruct *)userp;
-        mem->memory = realloc(mem->memory, mem->size + realsize + 1);
-        if (mem->memory == NULL) {
-                printf("Not enough memory (realloc returned NULL)\n");
-                return 0;
-        }
-        memcpy(&(mem->memory[mem->size]), contents, realsize);
-        mem->size += realsize;
-        mem->memory[mem->size] = 0;
-        return realsize;
+		size_t realsize = size * nmemb;
+		struct MemoryStruct *mem = (struct MemoryStruct *)userp;
+		mem->memory = realloc(mem->memory, mem->size + realsize + 1);
+		if (mem->memory == NULL) {
+				printf("Not enough memory (realloc returned NULL)\n");
+				return 0;
+		}
+		memcpy(&(mem->memory[mem->size]), contents, realsize);
+		mem->size += realsize;
+		mem->memory[mem->size] = 0;
+		return realsize;
 }
 
-//search
 void search(const char *pkg) {
-        CURL *curl;
-        CURLcode res;
-        struct MemoryStruct chunk;
+		CURL *curl;
+		CURLcode res;
+		struct MemoryStruct chunk;
 
-        chunk.memory = malloc(1);
-        chunk.size = 0;
+		chunk.memory = malloc(1);
+		chunk.size = 0;
 
-        curl_global_init(CURL_GLOBAL_DEFAULT);
-        curl = curl_easy_init();
+		curl_global_init(CURL_GLOBAL_DEFAULT);
+		curl = curl_easy_init();
 
-        if (curl) {
-                char url[256];
-                snprintf(url, sizeof(url), "https://aur.archlinux.org/rpc/?v=5&type=search&arg=%s", pkg);
-                curl_easy_setopt(curl, CURLOPT_URL, url);
-                curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, WriteMemoryCallback);
-                curl_easy_setopt(curl, CURLOPT_WRITEDATA, (void *)&chunk);
+		if (curl) {
+				char url[strlen(SEARCH_URL)+strlen(pkg)+1];
+				snprintf(url, sizeof(url), SEARCH_URL, pkg);
+				curl_easy_setopt(curl, CURLOPT_URL, url);
+				curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, WriteMemoryCallback);
+				curl_easy_setopt(curl, CURLOPT_WRITEDATA, (void *)&chunk);
 
-                res = curl_easy_perform(curl);
+				res = curl_easy_perform(curl);
 
-                if (res != CURLE_OK) {
-                        fprintf(stderr, "curl_easy_perform() failed: %s\n", curl_easy_strerror(res));
-                } else {
-                        json_object *parsed_json, *results;
-                        parsed_json = json_tokener_parse(chunk.memory);
-                        json_object_object_get_ex(parsed_json, "results", &results);
+				if (res != CURLE_OK) {
+						fprintf(stderr, "curl_easy_perform() failed: %s\n", curl_easy_strerror(res));
+				} else {
+						json_object *parsed_json, *results;
+						parsed_json = json_tokener_parse(chunk.memory);
+						json_object_object_get_ex(parsed_json, "results", &results);
 
-                        int n_results = json_object_array_length(results);
+						int n_results = json_object_array_length(results);
 
-                        printf("Found %d packages:\n", n_results);
-                        printf("------------------------------------\n");
-                        for (int i = 0; i < n_results; i++) {
-                                json_object *pkg_obj = json_object_array_get_idx(results, i);
-                                json_object *pkg_name, *pkg_desc, *pkg_ver, *pkg_url;
+						for (int i = 0; i < n_results; i++) {
+								json_object *pkg_obj = json_object_array_get_idx(results, i);
+								json_object *pkg_name, *pkg_desc, *pkg_ver;
 
-                                json_object_object_get_ex(pkg_obj, "Name", &pkg_name);
-                                json_object_object_get_ex(pkg_obj, "Description", &pkg_desc);
-                                json_object_object_get_ex(pkg_obj, "Version", &pkg_ver);
-                                json_object_object_get_ex(pkg_obj, "URL", &pkg_url);
+								json_object_object_get_ex(pkg_obj, "Name", &pkg_name);
+								json_object_object_get_ex(pkg_obj, "Description", &pkg_desc);
+								json_object_object_get_ex(pkg_obj, "Version", &pkg_ver);
 
-                                //printf("Package %d:\n", i + 1);
-                                printf("Name: %s\n", json_object_get_string(pkg_name));
-                                printf("Description: %s\n", json_object_get_string(pkg_desc));
-                                printf("Version: %s\n", json_object_get_string(pkg_ver));
-                                printf("URL: %s\n", json_object_get_string(pkg_url));
-                                printf("------------------------------------\n");
-                        }
-                json_object_put(parsed_json);
-                }
-        curl_easy_cleanup(curl);
-        }
-        free(chunk.memory);
-        curl_global_cleanup();
+								printf(BOLDCYAN "aur" RESET "/" BOLDWHITE "%s" BOLDGREEN " %s" RESET "\n", json_object_get_string(pkg_name), json_object_get_string(pkg_ver));
+								printf("    %s\n", json_object_get_string(pkg_desc));
+						}
+				json_object_put(parsed_json);
+				}
+		curl_easy_cleanup(curl);
+		}
+		free(chunk.memory);
+		curl_global_cleanup();
 }
 
 int download(char *argv[]) {
@@ -162,6 +155,7 @@ int uninstall(char *argv[]) {
 	memset(cmd, 0, strlen(SUDO)+strlen("pacman -R")+strlen(pkg)+1);
 	sprintf(cmd, "%s pacman -R %s", SUDO, pkg);
 	system(cmd);
+	return 0;
 }
 
 void help() {
