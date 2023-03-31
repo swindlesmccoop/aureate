@@ -38,51 +38,51 @@ static size_t WriteMemoryCallback(void *contents, size_t size, size_t nmemb, voi
 }
 
 void search(const char *pkg) {
-		CURL *curl;
-		CURLcode res;
-		struct MemoryStruct chunk;
+	CURL *curl;
+	CURLcode res;
+	struct MemoryStruct chunk;
 
-		chunk.memory = malloc(1);
-		chunk.size = 0;
+	chunk.memory = malloc(1);
+	chunk.size = 0;
 
-		curl_global_init(CURL_GLOBAL_DEFAULT);
-		curl = curl_easy_init();
+	curl_global_init(CURL_GLOBAL_DEFAULT);
+	curl = curl_easy_init();
 
-		if (curl) {
-				char url[strlen(SEARCH_URL)+strlen(pkg)+1];
-				snprintf(url, sizeof(url), SEARCH_URL, pkg);
-				curl_easy_setopt(curl, CURLOPT_URL, url);
-				curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, WriteMemoryCallback);
-				curl_easy_setopt(curl, CURLOPT_WRITEDATA, (void *)&chunk);
+	if (curl) {
+			char url[strlen(SEARCH_URL)+strlen(pkg)+1];
+			snprintf(url, sizeof(url), SEARCH_URL, pkg);
+			curl_easy_setopt(curl, CURLOPT_URL, url);
+			curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, WriteMemoryCallback);
+			curl_easy_setopt(curl, CURLOPT_WRITEDATA, (void *)&chunk);
 
-				res = curl_easy_perform(curl);
+			res = curl_easy_perform(curl);
 
-				if (res != CURLE_OK) {
-						fprintf(stderr, "curl_easy_perform() failed: %s\n", curl_easy_strerror(res));
-				} else {
-						json_object *parsed_json, *results;
-						parsed_json = json_tokener_parse(chunk.memory);
-						json_object_object_get_ex(parsed_json, "results", &results);
+			if (res != CURLE_OK) {
+					fprintf(stderr, "curl_easy_perform() failed: %s\n", curl_easy_strerror(res));
+			} else {
+					json_object *parsed_json, *results;
+					parsed_json = json_tokener_parse(chunk.memory);
+					json_object_object_get_ex(parsed_json, "results", &results);
 
-						int n_results = json_object_array_length(results);
+					int n_results = json_object_array_length(results);
 
-						for (int i = 0; i < n_results; i++) {
-								json_object *pkg_obj = json_object_array_get_idx(results, i);
-								json_object *pkg_name, *pkg_desc, *pkg_ver;
+					for (int i = 0; i < n_results; i++) {
+							json_object *pkg_obj = json_object_array_get_idx(results, i);
+							json_object *pkg_name, *pkg_desc, *pkg_ver;
 
-								json_object_object_get_ex(pkg_obj, "Name", &pkg_name);
-								json_object_object_get_ex(pkg_obj, "Description", &pkg_desc);
-								json_object_object_get_ex(pkg_obj, "Version", &pkg_ver);
+							json_object_object_get_ex(pkg_obj, "Name", &pkg_name);
+							json_object_object_get_ex(pkg_obj, "Description", &pkg_desc);
+							json_object_object_get_ex(pkg_obj, "Version", &pkg_ver);
 
-								printf(BOLDCYAN "aur" RESET "/" BOLDWHITE "%s" BOLDGREEN " %s" RESET "\n", json_object_get_string(pkg_name), json_object_get_string(pkg_ver));
-								printf("    %s\n", json_object_get_string(pkg_desc));
-						}
-				json_object_put(parsed_json);
-				}
-		curl_easy_cleanup(curl);
-		}
-		free(chunk.memory);
-		curl_global_cleanup();
+							printf(BOLDCYAN "aur" RESET "/" BOLDWHITE "%s" BOLDGREEN " %s" RESET "\n", json_object_get_string(pkg_name), json_object_get_string(pkg_ver));
+							printf("    %s\n", json_object_get_string(pkg_desc));
+					}
+			json_object_put(parsed_json);
+			}
+	curl_easy_cleanup(curl);
+	}
+	free(chunk.memory);
+	curl_global_cleanup();
 }
 
 int download(char *argv[]) {
@@ -165,13 +165,16 @@ void help() {
 	GREEN "  -S: " RESET "Sync package from remote respository\n"
 	GREEN "  -Ss: " RESET "Search for package in remote respository\n"
 	GREEN "  -R: " RESET "Remove local package\n"
-	GREEN "  -h, --help: " RESET "Print this help message\n");
+	GREEN "  -h, --help: " RESET "Print this help message\n"
+	RESET "\nYou can find more information by running " BLUE "man aureate" RESET ".\n");
 }
 
 void flags(int argc, char* argv[]) {
 	for (int i = 1; i < argc; i++) {
 		/* -S  */ if (strcmp(argv[i], "-S") == 0) { download(argv); }
 		/* -Ss */ else if (strcmp(argv[i], "-Ss") == 0) { search(argv[2]);; }
+		/* -S  */ if (strcmp(argv[i], "-h") == 0) { help(); }
+		/* -S  */ if (strcmp(argv[i], "--help") == 0) { help(); }
 		/* -R  */ else if (strcmp(argv[i], "-R") == 0) { uninstall(argv); }
 	}
 }

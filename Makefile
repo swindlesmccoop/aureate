@@ -11,6 +11,7 @@ debug:
 
 install:
 	install -Dm755 ./${PROG} ${PREFIX}/bin/${PROG}
+	install -Dm644 ./${PROG}.1 ${PREFIX}/share/man/man1/${PROG}.1
 
 uninstall:
 	rm -f ${PREFIX}/bin/${PROG}
