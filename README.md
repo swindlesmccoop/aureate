@@ -1,4 +1,7 @@
-## Dependencies: libcurl, libgit2, libjson-c
+## Dependencies:
+- `libcurl`
+- `libgit2`
+- `libjson-c`
 
 ## To Do
 - Handle multiple packages to install at at time
