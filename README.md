@@ -4,7 +4,7 @@
 - `libjson-c`
 
 ## To Do
-- Handle multiple packages to install at at time
+- ~~Handle multiple packages to install at at time~~
 - ~~Add `-R` flag~~
 - ~~Parse package info with `-Ss`~~
 - Clean up parse code
