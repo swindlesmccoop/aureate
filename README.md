@@ -3,6 +3,15 @@
 - `libgit2`
 - `libjson-c`
 
+## How To Install
+```
+make
+sudo make install
+```
+
+## How To Use
+Either run `man aureate` or `aureate --help`
+
 ## To Do
 - ~~Handle multiple packages to install at at time~~
 - ~~Add `-R` flag~~
