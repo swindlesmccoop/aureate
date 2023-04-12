@@ -17,11 +17,45 @@
 #define SEARCH_URL BASE_URL "rpc/?v=5&type=search&arg=%s"
 #define SUFFIX ".git"
 
+int
+vasprintf(char **restrict strp, const char *restrict fmt, va_list ap)
+{
+	va_list args;
+	va_copy(args, ap);
+	int size = vsnprintf(NULL, 0, fmt, args);
+
+	/* if negative number is returned return error */
+	if(size < 0)
+		return -1;
+	*strp = (char *)malloc(size + 1);
+	if(*strp == NULL)
+		return -1;
+
+	va_end(args);
+	return size = vsprintf(*strp, fmt, ap);
+}
+
+int
+asprintf(char **restrict strp, const char *restrict fmt, ...)
+{
+	va_list args;
+	int size = 0;
+	va_start(args, fmt);
+	size = vasprintf(strp, fmt, args);
+	va_end(args);
+	return size;
+}
+
+
 //for API parsing
 struct MemoryStruct {
 		char *memory;
 		size_t size;
 };
+
+int eputs(const char *s) {
+	return fprintf(stderr, "%s\n", s);
+}
 
 static size_t WriteMemoryCallback(void *contents, size_t size, size_t nmemb, void *userp) {
 		size_t realsize = size * nmemb;
@@ -49,8 +83,8 @@ void search(const char *pkg) {
 	curl = curl_easy_init();
 
 	if (curl) {
-			char url[strlen(SEARCH_URL)+strlen(pkg)+1];
-			snprintf(url, sizeof(url), SEARCH_URL, pkg);
+		     char *url;
+			asprintf(&url, SEARCH_URL, pkg);
 			curl_easy_setopt(curl, CURLOPT_URL, url);
 			curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, WriteMemoryCallback);
 			curl_easy_setopt(curl, CURLOPT_WRITEDATA, (void *)&chunk);
@@ -80,6 +114,7 @@ void search(const char *pkg) {
 			json_object_put(parsed_json);
 			}
 	curl_easy_cleanup(curl);
+	free(url);
 	}
 	free(chunk.memory);
 	curl_global_cleanup();
@@ -87,7 +122,10 @@ void search(const char *pkg) {
 
 int download(int argc, char *argv[]) {
 	//define vars
-	const char* syscache = getenv("XDG_CACHE_HOME");
+	 char* syscache = getenv("XDG_CACHE_HOME");
+	if(syscache == NULL) 
+		syscache = ".cache";
+
 	for (int i = 2; i < argc; i++) {
 		const char* pkg = argv[i];
 	
@@ -98,9 +136,8 @@ int download(int argc, char *argv[]) {
 		}
 
 		//construct aureate cache var
-		char cache[strlen(syscache)+strlen("aureate")+1];
-		memset(cache, 0, strlen(syscache)+strlen("aureate")+1);
-		sprintf(cache, "%s/%s", syscache, "aureate");
+		char *cache;
+		asprintf(&cache, "%s/%s", syscache, "aureate");
 		
 		//do the same thing as syscache with aureate cache
 		if (stat(cache, &st) == -1) {
@@ -108,9 +145,8 @@ int download(int argc, char *argv[]) {
 		}
 
 		//construct clone URL
-		char clone_url[strlen(BASE_URL)+strlen(pkg)+strlen(SUFFIX)+1];
-		memset(clone_url, 0, strlen(BASE_URL)+strlen(pkg)+strlen(SUFFIX)+1);
-		sprintf(clone_url, "%s%s%s", BASE_URL, pkg, SUFFIX);
+		char *clone_url = NULL;
+		asprintf(&clone_url, "%s%s%s", BASE_URL, pkg, SUFFIX);
 
 		//clone or pull the repo
 		chdir(cache);
@@ -144,19 +180,20 @@ int download(int argc, char *argv[]) {
 			printf("done.\n"); fflush(stdout);
 			chdir(pkg);
 		}
-
+		free(clone_url);
 		//hand off the rest to pacman
 		system("makepkg -si");
 	}
+
 	return 0;
 }
 
 int uninstall(char *argv[]) {
 	const char* pkg = argv[2];
-	char cmd[strlen(SUDO)+strlen("pacman -R")+strlen(pkg)+1];
-	memset(cmd, 0, strlen(SUDO)+strlen("pacman -R")+strlen(pkg)+1);
-	sprintf(cmd, "%s pacman -R %s", SUDO, pkg);
+	char *cmd;
+	asprintf(&cmd, "%s pacman -R %s", SUDO, pkg);
 	system(cmd);
+	free(cmd);
 	return 0;
 }
 
@@ -172,12 +209,30 @@ void help() {
 }
 
 void flags(int argc, char* argv[]) {
-	for (int i = 1; i < argc; i++) {
-		if (strcmp(argv[i], "-S") == 0) { download(argc, argv); }
-		else if (strcmp(argv[i], "-Ss") == 0) { search(argv[2]);; }
-		else if (strcmp(argv[i], "-h") == 0) { help(); }
-		else if (strcmp(argv[i], "--help") == 0) { help(); }
-		else if (strcmp(argv[i], "-R") == 0) { uninstall(argv); }
+	int c = 0;
+	int sync_flag = false;
+	/* Due pacman design's profund mental retardation, -s flag is
+	 * weird. */
+	while ((c = getopt(argc, argv, "SshR")) != 0) {
+		switch(c) {
+		case 'S':
+			download(argc, argv);
+			break;
+		case 's':
+				search(argv[2]);
+			break;
+		case 'h': 		  /* TODO: long arguments */
+			help();
+			break;
+		case 'R':			  /* This prototype sucks, why do you
+						   * pass an array to a function instead
+						   * of the name of the package you want
+						   * to uninstall? */
+			uninstall(argv);
+			break;
+		default:
+			fprintf(stderr, "Unknown argument: -%c", c);
+		}
 	}
 }
 
