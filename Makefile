@@ -2,6 +2,7 @@ PREFIX = /usr/local
 LIBS = -lgit2 -lcurl -ljson-c
 FLAGS = ${LIBS}
 PROG = aureate
+XDG_CACHE_HOME ?= ${HOME}/.cache
 
 all:
 	cc ${PROG}.c ${FLAGS} -o ${PROG}

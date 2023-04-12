@@ -88,6 +88,8 @@ void search(const char *pkg) {
 int download(int argc, char *argv[]) {
 	//define vars
 	const char* syscache = getenv("XDG_CACHE_HOME");
+	if (syscache == NULL)
+		syscache = "~/.cache/";
 	for (int i = 2; i < argc; i++) {
 		const char* pkg = argv[i];
 	
