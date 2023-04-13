@@ -21,3 +21,4 @@ Either run `man aureate` or `aureate --help`
 - [ ] Replace `system()` command with `exec()` family of functions
 - [ ] Fix `flags` function to use `getopt()`
 - [x] Use libgit to pull from the AUR git repos instead of redownloading tarball every time
+- [ ] Properly wrap lines of `search()` output
