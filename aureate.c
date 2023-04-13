@@ -4,6 +4,7 @@
 #include <fcntl.h>
 #include <git2.h>
 #include <json-c/json.h>
+#include <stdarg.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -17,9 +18,7 @@
 #define SEARCH_URL BASE_URL "rpc/?v=5&type=search&arg=%s"
 #define SUFFIX ".git"
 
-int
-vasprintf(char **restrict strp, const char *restrict fmt, va_list ap)
-{
+int vasprintf(char **restrict strp, const char *restrict fmt, va_list ap) {
 	va_list args;
 	va_copy(args, ap);
 	int size = vsnprintf(NULL, 0, fmt, args);
@@ -35,9 +34,7 @@ vasprintf(char **restrict strp, const char *restrict fmt, va_list ap)
 	return size = vsprintf(*strp, fmt, ap);
 }
 
-int
-asprintf(char **restrict strp, const char *restrict fmt, ...)
-{
+int asprintf(char **restrict strp, const char *restrict fmt, ...) {
 	va_list args;
 	int size = 0;
 	va_start(args, fmt);
@@ -83,7 +80,7 @@ void search(const char *pkg) {
 	curl = curl_easy_init();
 
 	if (curl) {
-		     char *url;
+			char *url;
 			asprintf(&url, SEARCH_URL, pkg);
 			curl_easy_setopt(curl, CURLOPT_URL, url);
 			curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, WriteMemoryCallback);
@@ -109,7 +106,7 @@ void search(const char *pkg) {
 							json_object_object_get_ex(pkg_obj, "Version", &pkg_ver);
 
 							printf(BOLDCYAN "aur" RESET "/" BOLDWHITE "%s" BOLDGREEN " %s" RESET "\n", json_object_get_string(pkg_name), json_object_get_string(pkg_ver));
-							printf("    %s\n", json_object_get_string(pkg_desc));
+							printf("	%s\n", json_object_get_string(pkg_desc));
 					}
 			json_object_put(parsed_json);
 			}
@@ -209,33 +206,17 @@ void help() {
 }
 
 void flags(int argc, char* argv[]) {
-	int c = 0;
-	int sync_flag = false;
-	/* Due pacman design's profund mental retardation, -s flag is
-	 * weird. */
-	while ((c = getopt(argc, argv, "SshR")) != 0) {
-		switch(c) {
-		case 'S':
-			download(argc, argv);
-			break;
-		case 's':
-				search(argv[2]);
-			break;
-		case 'h': 		  /* TODO: long arguments */
-			help();
-			break;
-		case 'R':			  /* This prototype sucks, why do you
-						   * pass an array to a function instead
-						   * of the name of the package you want
-						   * to uninstall? */
-			uninstall(argv);
-			break;
-		default:
-			fprintf(stderr, "Unknown argument: -%c", c);
-		}
+	for (int i = 1; i < argc; i++) {
+		if (strcmp(argv[i], "-S") == 0) { download(argc, argv); }
+		else if (strcmp(argv[i], "-Ss") == 0) { search(argv[2]);; }
+		else if (strcmp(argv[i], "-h") == 0) { help(); }
+		else if (strcmp(argv[i], "--help") == 0) { help(); }
+		else if (strcmp(argv[i], "-R") == 0) { uninstall(argv); } /* This prototype sucks, why do you
+																   * pass an array to a function instead
+																   * of the name of the package you want
+																   * to uninstall? */
 	}
 }
-
 
 int main(int argc, char* argv[]) {
 	//kill if root is executing
