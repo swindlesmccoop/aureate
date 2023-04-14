@@ -179,7 +179,7 @@ int download(int argc, char *argv[]) {
 		}
 		free(clone_url);
 		//hand off the rest to pacman
-		system("makepkg -si");
+		execlp("makepkg", "makepkg", "-si", NULL);
 	}
 
 	return 0;
