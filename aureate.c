@@ -70,26 +70,37 @@ static size_t WriteMemoryCallback(void *contents, size_t size, size_t nmemb, voi
 }
 
 void pretty_print(const char *str) {
-	struct winsize w;
-	ioctl(STDOUT_FILENO, TIOCGWINSZ, &w);
+    struct winsize w;
+    ioctl(STDOUT_FILENO, TIOCGWINSZ, &w);
 
-	int term_width = w.ws_col;
-	int indent = 4;
-	int wrap_width = term_width - indent;
+    int term_width = w.ws_col;
+    int indent = 4;
+    int wrap_width = term_width - indent;
 
-	int cur_width = indent;
-	int start_idx = 0;
+    int cur_width = indent;
+    int start_idx = 0;
+    int wrapped = 0;
 
-	for (int i = 0; i < strlen(str); ++i) {
-		if (str[i] == ' ' && cur_width >= wrap_width) {
-			printf("%.*s\n", i - start_idx, &str[start_idx]);
-			start_idx = i + 1;
-			cur_width = indent;
-		}
-		++cur_width;
-	}
+    printf("    "); // Add the initial 4 spaces
 
-	printf("    %s\n", &str[start_idx]);
+    for (int i = 0; i < strlen(str); ++i) {
+        if (str[i] == ' ' && cur_width >= wrap_width) {
+            printf("%.*s", i - start_idx, &str[start_idx]);
+            start_idx = i + 1;
+            cur_width = indent;
+            wrapped = 1;
+            printf("\n    "); // Add 4 spaces for wrapped lines
+        } else {
+            wrapped = 0; // Set wrapped to 0 for non-wrapped lines
+        }
+        ++cur_width;
+    }
+
+    if (wrapped) {
+        printf("    %s\n", &str[start_idx]);
+    } else {
+        printf("%s\n", &str[start_idx]);
+    }
 }
 
 void search(const char *pkg) {
