@@ -9,6 +9,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/ioctl.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <unistd.h>
@@ -68,6 +69,29 @@ static size_t WriteMemoryCallback(void *contents, size_t size, size_t nmemb, voi
 		return realsize;
 }
 
+void pretty_print(const char *str) {
+	struct winsize w;
+	ioctl(STDOUT_FILENO, TIOCGWINSZ, &w);
+
+	int term_width = w.ws_col;
+	int indent = 4;
+	int wrap_width = term_width - indent;
+
+	int cur_width = indent;
+	int start_idx = 0;
+
+	for (int i = 0; i < strlen(str); ++i) {
+		if (str[i] == ' ' && cur_width >= wrap_width) {
+			printf("%.*s\n", i - start_idx, &str[start_idx]);
+			start_idx = i + 1;
+			cur_width = indent;
+		}
+		++cur_width;
+	}
+
+	printf("    %s\n", &str[start_idx]);
+}
+
 void search(const char *pkg) {
 	CURL *curl;
 	CURLcode res;
@@ -106,7 +130,10 @@ void search(const char *pkg) {
 							json_object_object_get_ex(pkg_obj, "Version", &pkg_ver);
 
 							printf(BOLDCYAN "aur" RESET "/" BOLDWHITE "%s" BOLDGREEN " %s" RESET "\n", json_object_get_string(pkg_name), json_object_get_string(pkg_ver));
-							printf("	%s\n", json_object_get_string(pkg_desc));
+							//printf("    %s\n", json_object_get_string(pkg_desc));
+							//printf("    %s\n");
+							const char *desc_str = json_object_get_string(pkg_desc);
+							pretty_print(desc_str);
 					}
 			json_object_put(parsed_json);
 			}
@@ -189,7 +216,7 @@ int uninstall(char *argv[]) {
 	const char* pkg = argv[2];
 	char *cmd;
 	asprintf(&cmd, "%s pacman -R %s", SUDO, pkg);
-	system(cmd);
+	execlp(cmd, NULL);
 	free(cmd);
 	return 0;
 }
