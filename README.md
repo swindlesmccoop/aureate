@@ -23,3 +23,4 @@ Either run `man aureate` or `aureate --help`
 - [x] Use libgit to pull from the AUR git repos instead of redownloading tarball every time
 - [x] Properly wrap lines of `search()` output
 - [ ] `-Syu` function to update all packages
+- [ ] Make formatting consistent across all code
