@@ -219,19 +219,23 @@ int download(int argc, char *argv[]) {
 			chdir(pkg);
 		}
 		free(clone_url);
+
+		//handle -e
+		if (i + 1 < argc) {
+			char* nextpkg = argv[i+1];
+			if (strcmp(nextpkg, "-e") == 0) {
+				//skip -e as an arg so download() doesn't try to run it as a pkg
+				i++;
+				char* cmd;
+				asprintf(&cmd, "%s %s/aureate/%s/PKGBUILD", EDITOR, syscache, pkg);
+				system(cmd);
+			}
+		}
+
 		//hand off the rest to pacman
 		execlp("makepkg", "makepkg", "-si", NULL);
 	}
 
-	return 0;
-}
-
-int uninstall(char *argv[]) {
-	const char* pkg = argv[2];
-	char *cmd;
-	asprintf(&cmd, "%s pacman -R %s", SUDO, pkg);
-	execlp(cmd, NULL);
-	free(cmd);
 	return 0;
 }
 
@@ -252,8 +256,7 @@ void flags(int argc, char* argv[]) {
 		else if (strcmp(argv[i], "-Ss") == 0) { search(argv[2]);; }
 		else if (strcmp(argv[i], "-h") == 0) { help(); }
 		else if (strcmp(argv[i], "--help") == 0) { help(); }
-		else if (strcmp(argv[i], "-R") == 0) { uninstall(argv); }
-		//this prototype sucks, why do you pass an array to a function instead of the name of the package you want to uninstall?
+		else if (strcmp(argv[i], "-R") == 0) { execlp(SUDO, SUDO, "pacman", "-R", argv[2], NULL); }
 	}
 }
 

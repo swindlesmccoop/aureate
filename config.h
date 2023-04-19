@@ -1,4 +1,5 @@
 #define COLORS //comment this line to disable color output
+#define EDITOR "vim" //set editor for -e
 #define SUDO "sudo" //set privilege escalation program here
 
 #ifdef COLORS

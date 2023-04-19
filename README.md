@@ -24,3 +24,4 @@ Either run `man aureate` or `aureate --help`
 - [x] Properly wrap lines of `search()` output
 - [ ] `-Syu` function to update all packages
 - [x] Make formatting consistent across all code
+- [x] Add `-e` flag to edit PKGBUILD before install
