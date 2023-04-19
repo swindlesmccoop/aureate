@@ -24,7 +24,7 @@ int vasprintf(char **restrict strp, const char *restrict fmt, va_list ap) {
 	va_copy(args, ap);
 	int size = vsnprintf(NULL, 0, fmt, args);
 
-	/* if negative number is returned return error */
+	//if negative number is returned return error
 	if(size < 0)
 		return -1;
 	*strp = (char *)malloc(size + 1);
@@ -44,11 +44,10 @@ int asprintf(char **restrict strp, const char *restrict fmt, ...) {
 	return size;
 }
 
-
 //for API parsing
 struct MemoryStruct {
-		char *memory;
-		size_t size;
+	char *memory;
+	size_t size;
 };
 
 int eputs(const char *s) {
@@ -56,51 +55,55 @@ int eputs(const char *s) {
 }
 
 static size_t WriteMemoryCallback(void *contents, size_t size, size_t nmemb, void *userp) {
-		size_t realsize = size * nmemb;
-		struct MemoryStruct *mem = (struct MemoryStruct *)userp;
-		mem->memory = realloc(mem->memory, mem->size + realsize + 1);
-		if (mem->memory == NULL) {
-				printf("Not enough memory (realloc returned NULL)\n");
-				return 0;
-		}
-		memcpy(&(mem->memory[mem->size]), contents, realsize);
-		mem->size += realsize;
-		mem->memory[mem->size] = 0;
-		return realsize;
+	size_t realsize = size * nmemb;
+	struct MemoryStruct *mem = (struct MemoryStruct *)userp;
+	mem->memory = realloc(mem->memory, mem->size + realsize + 1);
+	if (mem->memory == NULL) {
+			printf("Not enough memory (realloc returned NULL)\n");
+			return 0;
+	}
+	memcpy(&(mem->memory[mem->size]), contents, realsize);
+	mem->size += realsize;
+	mem->memory[mem->size] = 0;
+	return realsize;
 }
 
 void pretty_print(const char *str) {
-    struct winsize w;
-    ioctl(STDOUT_FILENO, TIOCGWINSZ, &w);
+	struct winsize w;
+	ioctl(STDOUT_FILENO, TIOCGWINSZ, &w);
 
-    int term_width = w.ws_col;
-    int indent = 4;
-    int wrap_width = term_width - indent;
+	int term_width = w.ws_col;
+	int indent = 4;
+	int wrap_width = term_width - indent;
 
-    int cur_width = indent;
-    int start_idx = 0;
-    int wrapped = 0;
+	int cur_width = indent;
+	int start_idx = 0;
+	int wrapped = 0;
 
-    printf("    "); // Add the initial 4 spaces
+	//add the initial 4 spaces
+	printf("    ");
 
-    for (int i = 0; i < strlen(str); ++i) {
-        if (str[i] == ' ' && cur_width >= wrap_width) {
-            printf("%.*s", i - start_idx, &str[start_idx]);
-            start_idx = i + 1;
-            cur_width = indent;
-            wrapped = 1;
-            printf("\n    "); // Add 4 spaces for wrapped lines
-        } else {
-            wrapped = 0; // Set wrapped to 0 for non-wrapped lines
-        }
-        ++cur_width;
-    }
+	for (int i = 0; i < strlen(str); ++i) {
+		if (str[i] == ' ' && cur_width >= wrap_width) {
+			printf("%.*s", i - start_idx, &str[start_idx]);
+			start_idx = i + 1;
+			cur_width = indent;
+			wrapped = 1;
+			//add 4 spaces for wrapped lines
+			printf("\n    ");
+		} else {
+			//set wrapped to 0 for non-wrapped lines	
+			wrapped = 0; 
+		}
+		++cur_width;
+	}
 
-    if (wrapped) {
-        printf("    %s\n", &str[start_idx]);
-    } else {
-        printf("%s\n", &str[start_idx]);
-    }
+	//only print extra 4 spaces if wrapped
+	if (wrapped) {
+		printf("	%s\n", &str[start_idx]);
+	} else {
+		printf("%s\n", &str[start_idx]);
+	}
 }
 
 void search(const char *pkg) {
@@ -249,10 +252,8 @@ void flags(int argc, char* argv[]) {
 		else if (strcmp(argv[i], "-Ss") == 0) { search(argv[2]);; }
 		else if (strcmp(argv[i], "-h") == 0) { help(); }
 		else if (strcmp(argv[i], "--help") == 0) { help(); }
-		else if (strcmp(argv[i], "-R") == 0) { uninstall(argv); } /* This prototype sucks, why do you
-																   * pass an array to a function instead
-																   * of the name of the package you want
-																   * to uninstall? */
+		else if (strcmp(argv[i], "-R") == 0) { uninstall(argv); }
+		//this prototype sucks, why do you pass an array to a function instead of the name of the package you want to uninstall?
 	}
 }
 
@@ -273,4 +274,3 @@ int main(int argc, char* argv[]) {
 	flags(argc, argv);
 	return 0;
 }
-
