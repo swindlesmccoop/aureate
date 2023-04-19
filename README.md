@@ -23,5 +23,6 @@ Either run `man aureate` or `aureate --help`
 - [x] Use libgit to pull from the AUR git repos instead of redownloading tarball every time
 - [x] Properly wrap lines of `search()` output
 - [ ] `-Syu` function to update all packages
+  - Compare clone to master with `.git/refs/heads/master`
 - [x] Make formatting consistent across all code
 - [x] Add `-e` flag to edit PKGBUILD before install
