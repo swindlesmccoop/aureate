@@ -15,6 +15,7 @@ install:
 
 uninstall:
 	rm -f ${PREFIX}/bin/${PROG}
+	rm -f ${PREFIX}/share/man/man1/${PROG}.1
 
 clean:
 	rm -rf ${XDG_CACHE_HOME}/${PROG}
