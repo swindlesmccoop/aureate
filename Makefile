@@ -9,7 +9,7 @@ all:
 debug:
 	clang ${PROG}.c -Wall -Werror -fsanitize=undefined,address ${FLAGS} -o ${PROG}
 
-install:
+install: all
 	install -Dm755 ./${PROG} ${PREFIX}/bin/${PROG}
 	install -Dm644 ./${PROG}.1 ${PREFIX}/share/man/man1/${PROG}.1
 
