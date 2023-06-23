@@ -38,6 +38,7 @@ static void help(void);
 size_t WriteMemoryCallback(void *contents, size_t size, size_t nmemb, void *userp) {
 	if (size != 0 && nmemb > -1 / size)
 		errx(1, "realloc: %s", strerror(ENOMEM));
+
 	size_t realsize = size * nmemb;
 	struct MemoryStruct *mem = (struct MemoryStruct *)userp;
 	mem->memory = realloc(mem->memory, mem->size + realsize + 1);
@@ -45,7 +46,8 @@ size_t WriteMemoryCallback(void *contents, size_t size, size_t nmemb, void *user
 		err(1, "realloc");
 	memcpy(&(mem->memory[mem->size]), contents, realsize);
 	mem->size += realsize;
-	mem->memory[mem->size] = 0;
+	mem->memory[mem->size] = '\0';
+
 	return realsize;
 }
 
@@ -104,7 +106,7 @@ void search(const char *pkg) {
 	snprintf(url, URL_MAX, SEARCH_URL, pkg);
 	curl_easy_setopt(curl, CURLOPT_URL, url);
 	curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, WriteMemoryCallback);
-	curl_easy_setopt(curl, CURLOPT_WRITEDATA, (void *)&chunk);
+	curl_easy_setopt(curl, CURLOPT_WRITEDATA, &chunk);
 
 	res = curl_easy_perform(curl);
 	if (res != CURLE_OK)
@@ -207,17 +209,13 @@ int download(int argc, char *argv[]) {
 		}
 
 		//handle -e
-		if (i + 1 < argc) {
-			char* nextpkg = argv[i+1];
-			if (strcmp(nextpkg, "-e") == 0) {
-				//skip -e as an arg so download() doesn't try to run it as a pkg
-				char cmd[sizeof(EDITOR) + PATH_MAX];
-				i++;
-				snprintf(cmd, PATH_MAX,
-				         "%s %s/aureate/%s/PKGBUILD",
-				         EDITOR, syscache, pkg);
-				system(cmd);
-			}
+		if (i + 1 < argc && strcmp(argv[i + 1], "-e") == 0) {
+			//skip -e as an arg so download() doesn't try to run it as a pkg
+			char cmd[sizeof(EDITOR) + PATH_MAX];
+			i++;
+			snprintf(cmd, PATH_MAX, "%s %s/aureate/%s/PKGBUILD",
+			         EDITOR, syscache, pkg);
+			system(cmd);
 		}
 
 		//hand off the rest to pacman
@@ -253,11 +251,12 @@ int main(int argc, char* argv[]) {
 
 	//run program
 	for (int i = 1; i < argc; i++) {
-		if (strcmp(argv[i], "-S") == 0) { download(argc, argv); }
+		if (strcmp(argv[i], "-S") == 0) { return download(argc, argv); }
 		else if (strcmp(argv[i], "-Ss") == 0) { search(argv[2]);; }
 		else if (strcmp(argv[i], "-h") == 0) { help(); }
 		else if (strcmp(argv[i], "--help") == 0) { help(); }
 		else if (strcmp(argv[i], "-R") == 0) { execlp(SUDO, SUDO, "pacman", "-R", argv[2], NULL); }
 	}
+
 	return 0;
 }
