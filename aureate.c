@@ -6,8 +6,6 @@
 #include <json-c/json.h>
 #include <err.h>
 #include <errno.h>
-#include <stdarg.h>
-#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -76,60 +74,62 @@ void pretty_print(const char *str) {
 	}
 
 	//only print extra 4 spaces if wrapped
-	if (wrapped) {
+	if (wrapped)
 		printf("    %s\n", &str[start_idx]);
-	} else {
+	else
 		printf("%s\n", &str[start_idx]);
-	}
 }
 
 void search(const char *pkg) {
 	CURL *curl;
 	CURLcode res;
-	struct MemoryStruct chunk;
-
-	chunk.memory = malloc(1);
-	chunk.size = 0;
+	char url[URL_MAX];
+	struct MemoryStruct chunk = {
+		.memory = NULL,
+		.size = 0
+	};
 
 	curl_global_init(CURL_GLOBAL_DEFAULT);
 	curl = curl_easy_init();
 
-	if (curl) {
-			char url[URL_MAX];
-			snprintf(url, URL_MAX, SEARCH_URL, pkg);
-			curl_easy_setopt(curl, CURLOPT_URL, url);
-			curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, WriteMemoryCallback);
-			curl_easy_setopt(curl, CURLOPT_WRITEDATA, (void *)&chunk);
+	if (curl == NULL)
+		errx(1, "curl_easy_init: failed");
 
-			res = curl_easy_perform(curl);
+	snprintf(url, URL_MAX, SEARCH_URL, pkg);
+	curl_easy_setopt(curl, CURLOPT_URL, url);
+	curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, WriteMemoryCallback);
+	curl_easy_setopt(curl, CURLOPT_WRITEDATA, (void *)&chunk);
 
-			if (res != CURLE_OK) {
-					fprintf(stderr, "curl_easy_perform() failed: %s\n", curl_easy_strerror(res));
-			} else {
-					json_object *parsed_json, *results;
-					parsed_json = json_tokener_parse(chunk.memory);
-					json_object_object_get_ex(parsed_json, "results", &results);
+	res = curl_easy_perform(curl);
+	if (res != CURLE_OK)
+		errx(1, "curl_easy_perform() failed: %s", curl_easy_strerror(res));
 
-					int n_results = json_object_array_length(results);
+	json_object *parsed_json, *results;
+	parsed_json = json_tokener_parse(chunk.memory);
+	json_object_object_get_ex(parsed_json, "results", &results);
 
-					for (int i = 0; i < n_results; i++) {
-							json_object *pkg_obj = json_object_array_get_idx(results, i);
-							json_object *pkg_name, *pkg_desc, *pkg_ver;
+	int n_results = json_object_array_length(results);
 
-							json_object_object_get_ex(pkg_obj, "Name", &pkg_name);
-							json_object_object_get_ex(pkg_obj, "Description", &pkg_desc);
-							json_object_object_get_ex(pkg_obj, "Version", &pkg_ver);
+	for (int i = 0; i < n_results; i++) {
+		json_object *pkg_obj = json_object_array_get_idx(results, i);
+		json_object *pkg_name, *pkg_desc, *pkg_ver;
 
-							printf(BOLDCYAN "aur" RESET "/" BOLDWHITE "%s" BOLDGREEN " %s" RESET "\n", json_object_get_string(pkg_name), json_object_get_string(pkg_ver));
-							//printf("    %s\n", json_object_get_string(pkg_desc));
-							//printf("    %s\n");
-							const char *desc_str = json_object_get_string(pkg_desc);
-							pretty_print(desc_str);
-					}
-			json_object_put(parsed_json);
-			}
-	curl_easy_cleanup(curl);
+		json_object_object_get_ex(pkg_obj, "Name", &pkg_name);
+		json_object_object_get_ex(pkg_obj, "Description", &pkg_desc);
+		json_object_object_get_ex(pkg_obj, "Version", &pkg_ver);
+
+		printf(BOLDCYAN "aur" RESET "/" BOLDWHITE "%s" BOLDGREEN " %s" RESET "\n",
+		       json_object_get_string(pkg_name), json_object_get_string(pkg_ver));
+
+		//printf("    %s\n", json_object_get_string(pkg_desc));
+		//printf("    %s\n");
+
+		const char *desc_str = json_object_get_string(pkg_desc);
+		pretty_print(desc_str);
 	}
+	json_object_put(parsed_json);
+
+	curl_easy_cleanup(curl);
 	free(chunk.memory);
 	curl_global_cleanup();
 }
@@ -137,7 +137,7 @@ void search(const char *pkg) {
 int download(int argc, char *argv[]) {
 	//define vars
 	char* syscache = getenv("XDG_CACHE_HOME");
-	if(syscache == NULL)
+	if (syscache == NULL)
 		syscache = ".cache";
 
 	for (int i = 2; i < argc; i++) {
@@ -168,20 +168,24 @@ int download(int argc, char *argv[]) {
 
 		//if directory for package already exists, clone
 		if (stat(pkg, &st) == -1) {
-			printf(BLUE ":: " RESET "Fetching repo..."); fflush(stdout);
+			printf(BLUE ":: " RESET "Fetching repo...");
+			fflush(stdout);
 			git_repository *repo = NULL;
 			git_clone(&repo, clone_url, pkg, NULL);
 			chdir(pkg);
 			if (access("PKGBUILD", F_OK) != -1) {
 				printf("done.\n"); fflush(stdout);
 			} else {
-				printf("error. Package name invalid or you are not connected to the internet.\n"); fflush(stdout);
+				printf("error. Package name invalid or you are"
+				       "not connected to the internet.\n");
+				fflush(stdout);
 				//remove failed clone
 				return 1;
 			}
 		//else, pull latest changes
 		} else {
-			printf(BLUE ":: " RESET "Fetching latest changes..."); fflush(stdout);
+			printf(BLUE ":: " RESET "Fetching latest changes...");
+			fflush(stdout);
 			git_repository *repo;
 			git_remote *remote;
 
@@ -191,7 +195,8 @@ int download(int argc, char *argv[]) {
 			git_remote_free(remote);
 			git_repository_free(repo);
 
-			printf("done.\n"); fflush(stdout);
+			printf("done.\n");
+			fflush(stdout);
 			chdir(pkg);
 		}
 
@@ -200,9 +205,11 @@ int download(int argc, char *argv[]) {
 			char* nextpkg = argv[i+1];
 			if (strcmp(nextpkg, "-e") == 0) {
 				//skip -e as an arg so download() doesn't try to run it as a pkg
-				char cmd[sizeof(EDITOR) - 1 + PATH_MAX];
+				char cmd[sizeof(EDITOR) + PATH_MAX];
 				i++;
-				snprintf(cmd, PATH_MAX, "%s %s/aureate/%s/PKGBUILD", EDITOR, syscache, pkg);
+				snprintf(cmd, PATH_MAX,
+				         "%s %s/aureate/%s/PKGBUILD",
+				         EDITOR, syscache, pkg);
 				system(cmd);
 			}
 		}
