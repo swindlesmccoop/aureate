@@ -15,7 +15,7 @@
 #include <unistd.h>
 
 #define BASE_URL "https://aur.archlinux.org/"
-#define PARSE_URL BASE_URL "rpc/?v=5&type=info&arg="
+//#define PARSE_URL BASE_URL "rpc/?v=5&type=info&arg="
 #define SEARCH_URL BASE_URL "rpc/?v=5&type=search&arg=%s"
 #define SUFFIX ".git"
 #define URL_MAX 256
@@ -29,7 +29,13 @@ struct MemoryStruct {
 	size_t size;
 };
 
-static size_t WriteMemoryCallback(void *contents, size_t size, size_t nmemb, void *userp) {
+static size_t WriteMemoryCallback(void *contents, size_t size, size_t nmemb, void *userp);
+static void pretty_print(const char *str);
+static void search(const char *pkg);
+static int download(int argc, char *argv[]);
+static void help(void);
+
+size_t WriteMemoryCallback(void *contents, size_t size, size_t nmemb, void *userp) {
 	if (size != 0 && nmemb > -1 / size)
 		errx(1, "realloc: %s", strerror(ENOMEM));
 	size_t realsize = size * nmemb;
@@ -58,7 +64,7 @@ void pretty_print(const char *str) {
 	//add the initial 4 spaces
 	printf("    ");
 
-	for (int i = 0; i < strlen(str); ++i) {
+	for (int i = 0; i < (int)strlen(str); ++i) {
 		if (str[i] == ' ' && cur_width >= wrap_width) {
 			printf("%.*s", i - start_idx, &str[start_idx]);
 			start_idx = i + 1;
@@ -221,7 +227,7 @@ int download(int argc, char *argv[]) {
 	return 0;
 }
 
-void help() {
+void help(void) {
 	printf(BLUE "AUReate" RESET ": AUR helper in the C programming language\n"
 	"Usage: aureate [arguments] <package>\n\n"
 	"Arguments:\n"
