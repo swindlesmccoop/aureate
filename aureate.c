@@ -92,8 +92,8 @@ void pretty_print(const char *str) {
 			//add 4 spaces for wrapped lines
 			printf("\n    ");
 		} else {
-			//set wrapped to 0 for non-wrapped lines	
-			wrapped = 0; 
+			//set wrapped to 0 for non-wrapped lines
+			wrapped = 0;
 		}
 		++cur_width;
 	}
@@ -161,12 +161,12 @@ void search(const char *pkg) {
 int download(int argc, char *argv[]) {
 	//define vars
 	 char* syscache = getenv("XDG_CACHE_HOME");
-	if(syscache == NULL) 
+	if(syscache == NULL)
 		syscache = ".cache";
 
 	for (int i = 2; i < argc; i++) {
 		const char* pkg = argv[i];
-	
+
 		//check if XDG_CACHE_HOME exists - if not, create it
 		struct stat st;
 		if (stat(syscache, &st) == -1) {
@@ -176,7 +176,7 @@ int download(int argc, char *argv[]) {
 		//construct aureate cache var
 		char *cache;
 		asprintf(&cache, "%s/%s", syscache, "aureate");
-		
+
 		//do the same thing as syscache with aureate cache
 		if (stat(cache, &st) == -1) {
 			mkdir(cache, 0700);
@@ -214,7 +214,7 @@ int download(int argc, char *argv[]) {
 			git_remote_fetch(remote, NULL, NULL, "pull");
 			git_remote_free(remote);
 			git_repository_free(repo);
-			
+
 			printf("done.\n"); fflush(stdout);
 			chdir(pkg);
 		}
@@ -266,13 +266,13 @@ int main(int argc, char* argv[]) {
 		fprintf(stderr, RED "Error: do not run as root.\n" RESET);
 		return 1;
 	}
-	
+
 	//require args
 	if (argc < 2) {
 		help();
 		return 1;
 	}
-	
+
 	//run program
 	flags(argc, argv);
 	return 0;
