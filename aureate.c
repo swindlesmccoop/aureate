@@ -184,8 +184,9 @@ int download(int argc, char *argv[]) {
 			if (access("PKGBUILD", F_OK) != -1) {
 				printf("done.\n"); fflush(stdout);
 			} else {
-				printf("error. Package name invalid or you are"
-				       "not connected to the internet.\n");
+				fprintf(stderr, "\n%s: " RED "Error: " RESET
+				       "Package name invalid or you are not"
+				       "connected to the internet.\n", argv[0]);
 				fflush(stdout);
 				//remove failed clone
 				return 1;
@@ -211,9 +212,10 @@ int download(int argc, char *argv[]) {
 		//handle -e
 		if (i + 1 < argc && strcmp(argv[i + 1], "-e") == 0) {
 			//skip -e as an arg so download() doesn't try to run it as a pkg
-			char cmd[sizeof(EDITOR) + PATH_MAX];
+			char cmd[sizeof(EDITOR) + PATH_MAX + 1];
 			i++;
-			snprintf(cmd, PATH_MAX, "%s %s/aureate/%s/PKGBUILD",
+			snprintf(cmd, sizeof(EDITOR) + PATH_MAX,
+			         "%s %s/aureate/%s/PKGBUILD",
 			         EDITOR, syscache, pkg);
 			system(cmd);
 		}
@@ -239,7 +241,7 @@ void help(void) {
 int main(int argc, char* argv[]) {
 	//kill if root is executing
 	if (geteuid() == 0) {
-		fprintf(stderr, RED "Error: do not run as root.\n" RESET);
+		fprintf(stderr, "%s: " RED "Error: " RESET "do not run as root\n", argv[0]);
 		return 1;
 	}
 
