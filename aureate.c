@@ -4,6 +4,8 @@
 #include <fcntl.h>
 #include <git2.h>
 #include <json-c/json.h>
+#include <err.h>
+#include <errno.h>
 #include <stdarg.h>
 #include <stdbool.h>
 #include <stdio.h>
@@ -18,31 +20,10 @@
 #define PARSE_URL BASE_URL "rpc/?v=5&type=info&arg="
 #define SEARCH_URL BASE_URL "rpc/?v=5&type=search&arg=%s"
 #define SUFFIX ".git"
-
-int vasprintf(char **restrict strp, const char *restrict fmt, va_list ap) {
-	va_list args;
-	va_copy(args, ap);
-	int size = vsnprintf(NULL, 0, fmt, args);
-
-	//if negative number is returned return error
-	if(size < 0)
-		return -1;
-	*strp = (char *)malloc(size + 1);
-	if(*strp == NULL)
-		return -1;
-
-	va_end(args);
-	return size = vsprintf(*strp, fmt, ap);
-}
-
-int asprintf(char **restrict strp, const char *restrict fmt, ...) {
-	va_list args;
-	int size = 0;
-	va_start(args, fmt);
-	size = vasprintf(strp, fmt, args);
-	va_end(args);
-	return size;
-}
+#define URL_MAX 256
+#ifndef PATH_MAX
+#define PATH_MAX 256
+#endif /* PATH_MAX */
 
 //for API parsing
 struct MemoryStruct {
@@ -50,18 +31,14 @@ struct MemoryStruct {
 	size_t size;
 };
 
-int eputs(const char *s) {
-	return fprintf(stderr, "%s\n", s);
-}
-
 static size_t WriteMemoryCallback(void *contents, size_t size, size_t nmemb, void *userp) {
+	if (size != 0 && nmemb > -1 / size)
+		errx(1, "realloc: %s", strerror(ENOMEM));
 	size_t realsize = size * nmemb;
 	struct MemoryStruct *mem = (struct MemoryStruct *)userp;
 	mem->memory = realloc(mem->memory, mem->size + realsize + 1);
-	if (mem->memory == NULL) {
-			printf("Not enough memory (realloc returned NULL)\n");
-			return 0;
-	}
+	if (mem->memory == NULL)
+		err(1, "realloc");
 	memcpy(&(mem->memory[mem->size]), contents, realsize);
 	mem->size += realsize;
 	mem->memory[mem->size] = 0;
@@ -100,7 +77,7 @@ void pretty_print(const char *str) {
 
 	//only print extra 4 spaces if wrapped
 	if (wrapped) {
-		printf("	%s\n", &str[start_idx]);
+		printf("    %s\n", &str[start_idx]);
 	} else {
 		printf("%s\n", &str[start_idx]);
 	}
@@ -118,8 +95,8 @@ void search(const char *pkg) {
 	curl = curl_easy_init();
 
 	if (curl) {
-			char *url;
-			asprintf(&url, SEARCH_URL, pkg);
+			char url[URL_MAX];
+			snprintf(url, URL_MAX, SEARCH_URL, pkg);
 			curl_easy_setopt(curl, CURLOPT_URL, url);
 			curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, WriteMemoryCallback);
 			curl_easy_setopt(curl, CURLOPT_WRITEDATA, (void *)&chunk);
@@ -152,7 +129,6 @@ void search(const char *pkg) {
 			json_object_put(parsed_json);
 			}
 	curl_easy_cleanup(curl);
-	free(url);
 	}
 	free(chunk.memory);
 	curl_global_cleanup();
@@ -160,7 +136,7 @@ void search(const char *pkg) {
 
 int download(int argc, char *argv[]) {
 	//define vars
-	 char* syscache = getenv("XDG_CACHE_HOME");
+	char* syscache = getenv("XDG_CACHE_HOME");
 	if(syscache == NULL)
 		syscache = ".cache";
 
@@ -174,8 +150,8 @@ int download(int argc, char *argv[]) {
 		}
 
 		//construct aureate cache var
-		char *cache;
-		asprintf(&cache, "%s/%s", syscache, "aureate");
+		char cache[PATH_MAX];
+		snprintf(cache, PATH_MAX, "%s/aureate", syscache);
 
 		//do the same thing as syscache with aureate cache
 		if (stat(cache, &st) == -1) {
@@ -183,8 +159,8 @@ int download(int argc, char *argv[]) {
 		}
 
 		//construct clone URL
-		char *clone_url = NULL;
-		asprintf(&clone_url, "%s%s%s", BASE_URL, pkg, SUFFIX);
+		char clone_url[URL_MAX];
+		snprintf(clone_url, URL_MAX, "%s%s%s", BASE_URL, pkg, SUFFIX);
 
 		//clone or pull the repo
 		chdir(cache);
@@ -218,16 +194,15 @@ int download(int argc, char *argv[]) {
 			printf("done.\n"); fflush(stdout);
 			chdir(pkg);
 		}
-		free(clone_url);
 
 		//handle -e
 		if (i + 1 < argc) {
 			char* nextpkg = argv[i+1];
 			if (strcmp(nextpkg, "-e") == 0) {
 				//skip -e as an arg so download() doesn't try to run it as a pkg
+				char cmd[sizeof(EDITOR) - 1 + PATH_MAX];
 				i++;
-				char* cmd;
-				asprintf(&cmd, "%s %s/aureate/%s/PKGBUILD", EDITOR, syscache, pkg);
+				snprintf(cmd, PATH_MAX, "%s %s/aureate/%s/PKGBUILD", EDITOR, syscache, pkg);
 				system(cmd);
 			}
 		}
@@ -250,16 +225,6 @@ void help() {
 	RESET "\nYou can find more information by running " BLUE "man aureate" RESET ".\n");
 }
 
-void flags(int argc, char* argv[]) {
-	for (int i = 1; i < argc; i++) {
-		if (strcmp(argv[i], "-S") == 0) { download(argc, argv); }
-		else if (strcmp(argv[i], "-Ss") == 0) { search(argv[2]);; }
-		else if (strcmp(argv[i], "-h") == 0) { help(); }
-		else if (strcmp(argv[i], "--help") == 0) { help(); }
-		else if (strcmp(argv[i], "-R") == 0) { execlp(SUDO, SUDO, "pacman", "-R", argv[2], NULL); }
-	}
-}
-
 int main(int argc, char* argv[]) {
 	//kill if root is executing
 	if (geteuid() == 0) {
@@ -274,6 +239,12 @@ int main(int argc, char* argv[]) {
 	}
 
 	//run program
-	flags(argc, argv);
+	for (int i = 1; i < argc; i++) {
+		if (strcmp(argv[i], "-S") == 0) { download(argc, argv); }
+		else if (strcmp(argv[i], "-Ss") == 0) { search(argv[2]);; }
+		else if (strcmp(argv[i], "-h") == 0) { help(); }
+		else if (strcmp(argv[i], "--help") == 0) { help(); }
+		else if (strcmp(argv[i], "-R") == 0) { execlp(SUDO, SUDO, "pacman", "-R", argv[2], NULL); }
+	}
 	return 0;
 }
