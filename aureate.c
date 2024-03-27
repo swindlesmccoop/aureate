@@ -33,7 +33,7 @@ static size_t WriteMemoryCallback(void *contents, size_t size, size_t nmemb, voi
 static void pretty_print(const char *str);
 static void search(const char *pkg);
 static int download(int argc, char *argv[]);
-static void help(void);
+static void help(const char *progname);
 
 size_t WriteMemoryCallback(void *contents, size_t size, size_t nmemb, void *userp) {
 	if (size != 0 && nmemb > -1 / size)
@@ -142,11 +142,24 @@ void search(const char *pkg) {
 	curl_global_cleanup();
 }
 
+/* Get path for cache. Also use $HOME var */
+char *cache_path(const char *env_name)
+{
+        char *syscache = getenv(env_name); // ? getenv(env_name) : ".cache";   
+        if (syscache == NULL) {
+                char *home_dir = getenv("HOME");
+                static char full_path[PATH_MAX];
+
+                snprintf(full_path, PATH_MAX, "%s/.cache", home_dir);
+
+                return full_path;
+        }
+        return syscache;
+}
+
 int download(int argc, char *argv[]) {
 	//define vars
-	char* syscache = getenv("XDG_CACHE_HOME");
-	if (syscache == NULL)
-		syscache = ".cache";
+	char* syscache = cache_path("XDG_CACHE_HOME");
 
 	for (int i = 2; i < argc; i++) {
 		const char* pkg = argv[i];
@@ -161,6 +174,7 @@ int download(int argc, char *argv[]) {
 		char cache[PATH_MAX];
 		snprintf(cache, PATH_MAX, "%s/aureate", syscache);
 
+
 		//do the same thing as syscache with aureate cache
 		if (stat(cache, &st) == -1) {
 			mkdir(cache, 0700);
@@ -172,7 +186,7 @@ int download(int argc, char *argv[]) {
 
 		//clone or pull the repo
 		chdir(cache);
-		git_libgit2_init();
+                git_libgit2_init();
 
 		//if directory for package already exists, clone
 		if (stat(pkg, &st) == -1) {
@@ -227,38 +241,88 @@ int download(int argc, char *argv[]) {
 	return 0;
 }
 
-void help(void) {
+void help(const char *progname) {
 	printf(BLUE "AUReate" RESET ": AUR helper in the C programming language\n"
-	"Usage: aureate [arguments] <package>\n\n"
+	"Usage: %s [arguments] <package>\n\n"
 	"Arguments:\n"
-	GREEN "  -S: " RESET "Sync package from remote respository\n"
+	GREEN "  -S: "  RESET "Sync package from remote respository\n"
 	GREEN "  -Ss: " RESET "Search for package in remote respository\n"
-	GREEN "  -R: " RESET "Remove local package\n"
+        GREEN "  -Sc: " RESET "Clean local cache\n"
+	GREEN "  -R: "  RESET "Remove local package\n"
 	GREEN "  -h, --help: " RESET "Print this help message\n"
-	RESET "\nYou can find more information by running " BLUE "man aureate" RESET ".\n");
+	RESET "\nYou can find more information by running " BLUE "man aureate" RESET ".\n", progname);
+}
+
+void die(const char *progname, const char *message)
+{
+        fprintf(stderr, "%s: " RED "Error: " RESET "%s\n", progname, message);
+        exit(1);
 }
 
 int main(int argc, char* argv[]) {
 	//kill if root is executing
-	if (geteuid() == 0) {
-		fprintf(stderr, "%s: " RED "Error: " RESET "do not run as root\n", argv[0]);
-		return 1;
-	}
+	if (geteuid() == 0)
+                die(argv[0], "Do not run as root!");
 
 	//require args
 	if (argc < 2) {
-		help();
+		help(argv[0]);
 		return 1;
 	}
 
-	//run program
-	for (int i = 1; i < argc; i++) {
-		if (strcmp(argv[i], "-S") == 0) { return download(argc, argv); }
-		else if (strcmp(argv[i], "-Ss") == 0) { search(argv[2]);; }
-		else if (strcmp(argv[i], "-h") == 0) { help(); }
-		else if (strcmp(argv[i], "--help") == 0) { help(); }
-		else if (strcmp(argv[i], "-R") == 0) { execlp(SUDO, SUDO, "pacman", "-R", argv[2], NULL); }
-	}
+
+        /* Initialize flags */
+        int Sflag = 0, Rflag = 0, sflag = 0, cflag = 0, ch;
+
+        /* now check options */
+        while ((ch = getopt(argc, argv, "hSRsc")) != -1) {
+                switch (ch) {
+                        case 'h':
+                                help(argv[0]);
+                                return 0;
+                        case 'S':
+                                Sflag = 1;
+                                break;
+                        case 'R':
+                                Rflag = 1;
+                                break;
+                        case 's':
+                                sflag = 1;
+                                break;
+                        case 'c':
+                                cflag = 1;
+                                break;
+                        default:
+                                help(argv[0]);
+                                return 1;
+                }
+        }
+
+        /* run program */
+
+        if (Sflag && cflag) {
+                char path[PATH_MAX];
+                snprintf(path, PATH_MAX, "%s/aureate", cache_path("XDG_CACHE_HOME"));
+
+                printf("Are you sure you want to clean cache\nIn '%s' [y/n] ", path);
+
+                char user_input = getchar();
+                if ( user_input == 'y' || user_input == 'Y')
+                        execlp("rm", "rm", "-rf", path, NULL);
+
+                return 1;
+        }
+
+        if (Rflag && !Sflag) 
+                return execlp(SUDO, SUDO, "pacman", "-R", argv[2], NULL); 
+        else if (Sflag && sflag && !Rflag)
+                search(argv[2]);
+        else if (Sflag && !Rflag) 
+                return download(argc, argv);
+        else
+                die(argv[0], "Unknown option!");
+
+
 
 	return 0;
 }
