@@ -19,7 +19,7 @@ Either run `man aureate` or `aureate --help`
 - [ ] Clean up parse code
 - [x] Reimplement `strlen()` inside of `char` combined with `snprintf()` all using `asprintf()`
 - [x] Replace `system()` command with `exec()` family of functions
-- [ ] Fix `flags` function to use `getopt()`
+- [x] Fix `flags` function to use `getopt()`
 - [x] Use libgit to pull from the AUR git repos instead of redownloading tarball every time
 - [x] Properly wrap lines of `search()` output
 - [ ] `-Syu` function to update all packages
