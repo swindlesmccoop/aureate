@@ -32,7 +32,7 @@ struct MemoryStruct {
 static size_t WriteMemoryCallback(void *contents, size_t size, size_t nmemb, void *userp);
 static void pretty_print(const char *str);
 static void search(const char *pkg);
-static int download(int argc, char *argv[]);
+static int download(int argc, char *argv[], int install);
 static void help(const char *progname);
 
 size_t WriteMemoryCallback(void *contents, size_t size, size_t nmemb, void *userp) {
@@ -157,9 +157,12 @@ char *cache_path(const char *env_name)
         return syscache;
 }
 
-int download(int argc, char *argv[]) {
+int download(int argc, char *argv[], int install) {
 	//define vars
 	char* syscache = cache_path("XDG_CACHE_HOME");
+    //construct makepkg options
+    char makepkg_opts[4];
+    snprintf(makepkg_opts, 4, "-s%s", install == 1 ? "i" : "");
 
 	for (int i = 2; i < argc; i++) {
 		const char* pkg = argv[i];
@@ -186,7 +189,7 @@ int download(int argc, char *argv[]) {
 
 		//clone or pull the repo
 		chdir(cache);
-                git_libgit2_init();
+        git_libgit2_init();
 
 		//if directory for package already exists, clone
 		if (stat(pkg, &st) == -1) {
@@ -235,7 +238,7 @@ int download(int argc, char *argv[]) {
 		}
 
 		//hand off the rest to pacman
-		execlp("makepkg", "makepkg", "-si", NULL);
+		execlp("makepkg", "makepkg", makepkg_opts, NULL);
 	}
 
 	return 0;
@@ -247,7 +250,8 @@ void help(const char *progname) {
 	"Arguments:\n"
 	GREEN "  -S: "  RESET "Sync package from remote respository\n"
 	GREEN "  -Ss: " RESET "Search for package in remote respository\n"
-        GREEN "  -Sc: " RESET "Clean local cache\n"
+    GREEN "  -Sc: " RESET "Clean local cache\n"
+    GREEN "  -b: "  RESET "Only build package\n"
 	GREEN "  -R: "  RESET "Remove local package\n"
 	GREEN "  -h, --help: " RESET "Print this help message\n"
 	RESET "\nYou can find more information by running " BLUE "man aureate" RESET ".\n", progname);
@@ -272,10 +276,10 @@ int main(int argc, char* argv[]) {
 
 
         /* Initialize flags */
-        int Sflag = 0, Rflag = 0, sflag = 0, cflag = 0, ch;
+        int Sflag = 0, Rflag = 0, sflag = 0, cflag = 0, bflag = 0, ch;
 
         /* now check options */
-        while ((ch = getopt(argc, argv, "hSRsc")) != -1) {
+        while ((ch = getopt(argc, argv, "hSRbsc")) != -1) {
                 switch (ch) {
                         case 'h':
                                 help(argv[0]);
@@ -291,6 +295,9 @@ int main(int argc, char* argv[]) {
                                 break;
                         case 'c':
                                 cflag = 1;
+                                break;
+                        case 'b':
+                                bflag = 1;
                                 break;
                         default:
                                 help(argv[0]);
@@ -317,8 +324,10 @@ int main(int argc, char* argv[]) {
                 return execlp(SUDO, SUDO, "pacman", "-R", argv[2], NULL); 
         else if (Sflag && sflag && !Rflag)
                 search(argv[2]);
-        else if (Sflag && !Rflag) 
-                return download(argc, argv);
+        else if (Sflag && !bflag && !Rflag) 
+                return download(argc, argv, 1);
+        else if (Sflag && bflag && !Rflag)
+                return download(argc, argv, 0);
         else
                 die(argv[0], "Unknown option!");
 
